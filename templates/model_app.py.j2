@@ -1,0 +1,19 @@
+from fastapi import FastAPI
+from transformers import pipeline
+from pydantic import BaseModel
+
+app = FastAPI()
+
+model = pipeline("{{ task }}", model="{{ model_id }}")
+
+class Input(BaseModel):
+    input: str
+
+@app.post("/predict")
+def predict(body: Input):
+    result = model(body.input)
+    return {"model": "{{ model_id }}", "result": result}
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "model": "{{ model_id }}", "task": "{{ task }}"}

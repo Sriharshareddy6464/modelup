@@ -1,0 +1,77 @@
+import docker
+import os
+import shutil
+import tempfile
+from server.generator import generate_model_app
+
+client = docker.from_env()
+
+REQUIREMENTS = """
+fastapi
+uvicorn
+transformers
+torch
+"""
+
+DOCKERFILE = """
+FROM python:3.10-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY main.py .
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+"""
+
+def build_and_run(model_id: str, task: str, port: int) -> str:
+    model_slug = model_id.replace("/", "-")
+    image_tag = f"modelup-{model_slug}"
+
+    # create temp build context
+    build_dir = tempfile.mkdtemp()
+
+    try:
+        # write generated main.py
+        generate_model_app(model_id, task, build_dir)
+
+        # write Dockerfile
+        with open(os.path.join(build_dir, "Dockerfile"), "w") as f:
+            f.write(DOCKERFILE)
+
+        # write requirements
+        with open(os.path.join(build_dir, "requirements.txt"), "w") as f:
+            f.write(REQUIREMENTS)
+
+        # build image
+        client.images.build(path=build_dir, tag=image_tag, rm=True)
+
+        # run container
+        container = client.containers.run(
+            image_tag,
+            detach=True,
+            ports={"8000/tcp": port},
+            name=f"modelup-{model_slug}",
+            restart_policy={"Name": "unless-stopped"}
+        )
+
+        return container.id
+
+    finally:
+        shutil.rmtree(build_dir)
+
+
+def stop_and_remove(model_id: str):
+    model_slug = model_id.replace("/", "-")
+    image_tag = f"modelup-{model_slug}"
+    container_name = f"modelup-{model_slug}"
+
+    try:
+        container = client.containers.get(container_name)
+        container.stop()
+        container.remove()
+    except docker.errors.NotFound:
+        pass
+
+    try:
+        client.images.remove(image_tag, force=True)
+    except docker.errors.ImageNotFound:
+        pass
