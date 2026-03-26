@@ -24,7 +24,7 @@ def deploy(
         data = response.json()
         console.print(f"[bold green]✓ Endpoint ready:[/bold green] http://your-ec2-ip{data['endpoint']}")
     else:
-        console.print(f"[bold red]✗ Failed:[/bold red] {response.json()['detail']}")
+        console.print(f"[bold red]✗ Failed:[/bold red] status={response.status_code} body={response.text}")
 
 
 @app.command()
