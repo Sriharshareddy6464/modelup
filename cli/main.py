@@ -6,7 +6,7 @@ from rich.table import Table
 app = typer.Typer()
 console = Console()
 
-BACKEND_URL = "http://localhost:9000"
+BACKEND_URL = "http://40.192.1.216:9000"
 
 
 @app.command()
