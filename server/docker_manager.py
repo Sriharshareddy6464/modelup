@@ -43,7 +43,19 @@ def build_and_run(model_id: str, task: str, port: int) -> str:
             f.write(REQUIREMENTS)
 
         # build image
-        client.images.build(path=build_dir, tag=image_tag, rm=True)
+            try:
+                image, logs = client.images.build(path=build_dir, tag=image_tag, rm=True)
+                for log in logs:
+                    if 'stream' in log:
+                        print(log['stream'], end='')
+            except docker.errors.BuildError as e:
+                print("BUILD FAILED - full log:")
+                for log in e.build_log:
+                    if 'stream' in log:
+                          print(log['stream'], end='')
+                    if 'error' in log:
+                        print("ERROR:", log['error'])
+                raise
 
         # run container
         container = client.containers.run(
