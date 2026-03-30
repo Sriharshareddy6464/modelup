@@ -6,7 +6,8 @@ from rich.table import Table
 app = typer.Typer()
 console = Console()
 
-BACKEND_URL = "http://18.61.228.111:9000"
+BACKEND_URL = "http://18.61.156.165:9000"
+EC2_IP = "18.61.156.165"
 
 
 @app.command()
@@ -22,7 +23,7 @@ def deploy(
 
     if response.status_code == 200:
         data = response.json()
-        console.print(f"[bold green]✓ Endpoint ready:[/bold green] http://your-ec2-ip{data['endpoint']}")
+        console.print(f"[bold green]✓ Endpoint ready:[/bold green] http://{EC2_IP}{data['endpoint']}")
     else:
         console.print(f"[bold red]✗ Failed:[/bold red] status={response.status_code} body={response.text}")
 
